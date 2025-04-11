@@ -25,7 +25,7 @@ def _():
         header=0,
         delimiter=";",
     )
-    #df.head
+    # df.head
     return df, pd
 
 
@@ -111,7 +111,7 @@ def _(df_1, mo):
     df_1["stadt"] = df_1["gemeindename"].str.extract("^(.*?),")
 
     # Nur erste Zeile der jeweiligen Stadt alphabetisch
-    df_1.sort_values('stadt', ascending=True, inplace=True)
+    df_1.sort_values("stadt", ascending=True, inplace=True)
     staedte = df_1["stadt"].unique()
 
     # Dropdown mit allen Städten
@@ -313,6 +313,7 @@ def _(ctx_gdf, drop_farbe, drop_groesse, gdf, gemeinde_df):
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 
