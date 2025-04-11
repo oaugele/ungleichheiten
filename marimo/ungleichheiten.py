@@ -6,11 +6,11 @@ app = marimo.App()
 
 @app.cell
 def _():
-    ## Ungleichheiten in deutschen Städten
+    # Ungleichheiten in deutschen Städten
     return
 
 
-@app.cell(hide_code=True)
+@app.cell(disabled=True, hide_code=True)
 def _(mo):
     mo.md(r"""### CSV-Datei einlesen""")
     return
@@ -29,7 +29,7 @@ def _():
     return df, pd
 
 
-@app.cell(hide_code=True)
+@app.cell(disabled=True, hide_code=True)
 def _(mo):
     mo.md(r"""### Fehlende Werte behandeln""")
     return
@@ -41,7 +41,7 @@ def _(df):
     return (df_1,)
 
 
-@app.cell(hide_code=True)
+@app.cell(disabled=True, hide_code=True)
 def _(mo):
     mo.md(r"""### Spaltennamen ändern""")
     return
@@ -49,17 +49,27 @@ def _(mo):
 
 @app.cell
 def _(df_1):
-    df_1.rename(columns={'bev_ges_zelle': 'Einwohner pro qkm', 'sgb_quote': 'Armutsquote', 'akad_ant_zelle': 'Anteil Akademiker', 'ant_elb_zelle': 'Anteil SGB II Empfänger', 'ant_4800ein_zelle': 'Einkommen > 4800', 'ant_6600ein_zelle': 'Einkommen > 6600'}, inplace=True)
+    df_1.rename(
+        columns={
+            "bev_ges_zelle": "Einwohner pro qkm",
+            "sgb_quote": "Armutsquote",
+            "akad_ant_zelle": "Anteil Akademiker",
+            "ant_elb_zelle": "Anteil SGB II Empfänger",
+            "ant_4800ein_zelle": "Einkommen > 4800",
+            "ant_6600ein_zelle": "Einkommen > 6600",
+        },
+        inplace=True,
+    )
     return
 
 
-@app.cell
+@app.cell(disabled=True, hide_code=True)
 def _(mo):
     mo.md(r"""### Gitterkoordinaten extrahieren und Länge und Breite umwandeln""")
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(df_1):
     """
     Die Koordinaten der Spalte "gitter1km" sind im Format "1kmN3254E4569" (Lambert-Projektion ETRS89-LAEA (EPSG:3035))
@@ -67,21 +77,25 @@ def _(df_1):
     """
 
     def extract_coords(gitter_id):
-        parts = gitter_id.split('km')[1].split('N')[1].split('E')
+        parts = gitter_id.split("km")[1].split("N")[1].split("E")
         e = int(parts[0]) * 1000
         n = int(parts[1]) * 1000
         return (n, e)
-    df_1['n'] = df_1['gitter1km'].apply(lambda x: extract_coords(x)[0])
-    df_1['e'] = df_1['gitter1km'].apply(lambda x: extract_coords(x)[1])
 
-    '\nDas ETRS89-LAEA-System verwendet False Easting und False Northing von 4321000 bzw. 3210000 Metern. \nUm die Koordinaten korrekt zu transformieren, werden diese Werte addiert\n'
+    df_1["n"] = df_1["gitter1km"].apply(lambda x: extract_coords(x)[0])
+    df_1["e"] = df_1["gitter1km"].apply(lambda x: extract_coords(x)[1])
 
-    df_1['x'] = df_1['n'] + 4321000
-    df_1['y'] = df_1['e'] + 3210000
+    "\nDas ETRS89-LAEA-System verwendet False Easting und False Northing von 4321000 bzw. 3210000 Metern. \nUm die Koordinaten korrekt zu transformieren, werden diese Werte addiert\n"
+
+    df_1["x"] = df_1["n"] + 4321000
+    df_1["y"] = df_1["e"] + 3210000
     import pyproj
-    etrs_laea = pyproj.Proj('epsg:3035')
-    wgs84 = pyproj.Proj('epsg:4326')
-    (df_1['lat'], df_1['lon']) = pyproj.transform(etrs_laea, wgs84, df_1['x'], df_1['y'])
+
+    etrs_laea = pyproj.Proj("epsg:3035")
+    wgs84 = pyproj.Proj("epsg:4326")
+    (df_1["lat"], df_1["lon"]) = pyproj.transform(
+        etrs_laea, wgs84, df_1["x"], df_1["y"]
+    )
     return etrs_laea, extract_coords, pyproj, wgs84
 
 
@@ -93,6 +107,9 @@ def _(mo):
 
 @app.cell
 def _(df_1, mo):
+    # Nur den Stadtnamen vor dem Komma extrahieren
+    df_1["stadt"] = df_1["gemeindename"].str.extract("^(.*?),")
+
     # Nur erste Zeile der jeweiligen Stadt alphabetisch
     df_1.sort_values('stadt', ascending=True, inplace=True)
     staedte = df_1["stadt"].unique()
@@ -103,7 +120,7 @@ def _(df_1, mo):
     return drop_stadt, staedte
 
 
-@app.cell(hide_code=True)
+@app.cell(disabled=True, hide_code=True)
 def _(mo):
     mo.md(r"""### Stadt extrahieren""")
     return
@@ -111,17 +128,14 @@ def _(mo):
 
 @app.cell
 def _(df_1, drop_stadt):
-    # Nur den Stadtnamen vor dem Komma extrahieren
-    df_1['stadt'] = df_1['gemeindename'].str.extract('^(.*?),')
-
     # Wert aus Dropdownliste auswaehlen
     stadt = [drop_stadt.value]
 
     # Nur Daten von ausgewaehlten Stadten ausgeben
-    gemeinde_stadt = df_1[df_1['stadt'].isin(stadt)]
+    gemeinde_stadt = df_1[df_1["stadt"].isin(stadt)]
 
-    #print(drop_stadt.value)
-    #gemeinde_stadt
+    # print(drop_stadt.value)
+    # gemeinde_stadt
     return gemeinde_stadt, stadt
 
 
@@ -134,11 +148,13 @@ def _(mo):
 @app.cell
 def _(gemeinde_stadt, mo):
     # Nur erste Zeile des jeweiligen Jahres aufsteigend
-    gemeinde_stadt.sort_values('jahr', ascending=True, inplace=True)
+    gemeinde_stadt.sort_values("jahr", ascending=True, inplace=True)
     jahre = gemeinde_stadt["jahr"].unique()
 
     # Dropdown mit allen verfuegbaren Jahren
-    drop_jahr = mo.ui.dropdown(options=jahre.astype(str), value=jahre[len(jahre)-1].astype(str))
+    drop_jahr = mo.ui.dropdown(
+        options=jahre.astype(str), value=jahre[len(jahre) - 1].astype(str)
+    )
     drop_jahr
     return drop_jahr, jahre
 
@@ -146,13 +162,15 @@ def _(gemeinde_stadt, mo):
 @app.cell
 def _(drop_jahr, gemeinde_stadt):
     # Neuer Dataframe mit nur den Daten des jeweiligen Jahres
-    gemeinde_df = gemeinde_stadt[gemeinde_stadt['jahr'].isin([drop_jahr.value.astype(int)])]
-    #print([drop_jahr.value])
-    #gemeinde_df
+    gemeinde_df = gemeinde_stadt[
+        gemeinde_stadt["jahr"].isin([drop_jahr.value.astype(int)])
+    ]
+    # print([drop_jahr.value])
+    # gemeinde_df
     return (gemeinde_df,)
 
 
-@app.cell(hide_code=True)
+@app.cell(disabled=True, hide_code=True)
 def _(mo):
     mo.md(r"""### GeoDataFrames mit Geopandas erstellen""")
     return
@@ -174,7 +192,7 @@ def _(gemeinde_df):
         ),
     )
 
-    #gdf.head
+    # gdf.head
     return ctx_gdf, gdf, gpd
 
 
@@ -187,10 +205,19 @@ def _(mo):
 @app.cell
 def _(mo):
     # Gitterdaten
-    spalten = ['Einwohner pro qkm', 'Armutsquote', 'Anteil Akademiker', 'Anteil SGB II Empfänger', 'Einkommen > 4800', 'Einkommen > 6600']
+    spalten = [
+        "Einwohner pro qkm",
+        "Armutsquote",
+        "Anteil Akademiker",
+        "Anteil SGB II Empfänger",
+        "Einkommen > 4800",
+        "Einkommen > 6600",
+    ]
 
     # Dropdown mit allen verfuegbaren Gitterdaten fuer Punktgröße
-    drop_groesse = mo.ui.dropdown(options=spalten, value='Einwohner pro qkm', label="Punktgröße: ")
+    drop_groesse = mo.ui.dropdown(
+        options=spalten, value="Einwohner pro qkm", label="Punktgröße: "
+    )
     drop_groesse
     return drop_groesse, spalten
 
@@ -198,12 +225,12 @@ def _(mo):
 @app.cell
 def _(mo, spalten):
     # Dropdown mit allen verfügbaren Gitterdaten fuer Farbe
-    drop_farbe = mo.ui.dropdown(options=spalten, value='Armutsquote', label="Farbe: ")
+    drop_farbe = mo.ui.dropdown(options=spalten, value="Armutsquote", label="Farbe: ")
     drop_farbe
     return (drop_farbe,)
 
 
-@app.cell(hide_code=True)
+@app.cell(disabled=True, hide_code=True)
 def _(mo):
     mo.md(r"""### Visualisierung""")
     return
@@ -213,9 +240,9 @@ def _(mo):
 def _(ctx_gdf, drop_farbe, drop_groesse, gdf, gemeinde_df):
     import matplotlib.pyplot as plt
     import contextily as ctx
+
     # import cartopy
     # import cartopy.crs as ccrs
-
 
     # Umwandeln in WGS84 (EPSG:4326) mit der Geopandas-Funktion to_crs (Coordinate Reference System)
     back_gdf = ctx_gdf.to_crs(epsg=3857)
@@ -255,16 +282,18 @@ def _(ctx_gdf, drop_farbe, drop_groesse, gdf, gemeinde_df):
     plt.suptitle(titel, fontsize=8)  # Titel für den gesamten Plot
     ax.get_xaxis().set_ticklabels([])  # Entfernt die x-Ticks
     plt.yticks([])  # Entfernt die y-Tick-Labels
-    #plt.xlabel("km*10", fontsize=8)  # Beschriftung der x-Achse
+    # plt.xlabel("km*10", fontsize=8)  # Beschriftung der x-Achse
 
     # Hintergrundkarte hinzufügen
-    ctx.add_basemap(ax, source=ctx.providers.OpenStreetMap.Mapnik, crs=ctx_gdf.crs, zoom=13)
+    ctx.add_basemap(
+        ax, source=ctx.providers.OpenStreetMap.Mapnik, crs=ctx_gdf.crs, zoom=13
+    )
 
-    #plt.show()
+    # plt.show()
 
     # Mache den Plot interaktiv
-    #interactive_plot = mo.mpl.interactive(fig)
-    #interactive_plot
+    # interactive_plot = mo.mpl.interactive(fig)
+    # interactive_plot
     ax
     return (
         ax,
