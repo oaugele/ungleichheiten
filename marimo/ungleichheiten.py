@@ -21,7 +21,7 @@ def _():
     import pandas as pd
 
     df = pd.read_csv(
-        "https://oaugele.github.io/ungleichheiten/data/ungleichheiten.csv",
+        "data/ungleichheiten.csv",
         header=0,
         delimiter=";",
     )
