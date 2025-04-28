@@ -239,6 +239,7 @@ def _(mo):
 @app.cell
 def _(ctx_gdf, drop_farbe, drop_groesse, gdf, gemeinde_df):
     import matplotlib.pyplot as plt
+    import ssl
     import contextily as ctx
 
     # import cartopy
